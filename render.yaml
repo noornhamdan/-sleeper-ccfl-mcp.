@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: sleeper-ccfl-mcp
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: SLEEPER_LEAGUE_ID
+        value: "1312132677519818752"
+      - key: SLEEPER_TEAM_NAME
+        value: "Tubbo Johnson"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "120"

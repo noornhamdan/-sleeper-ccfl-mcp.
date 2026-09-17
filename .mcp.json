@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sleeper-ccfl": {
+      "command": "node",
+      "args": ["${pluginRoot}/src/stdio.js"],
+      "env": {
+        "SLEEPER_LEAGUE_ID": "1312132677519818752",
+        "SLEEPER_TEAM_NAME": "Tubbo Johnson"
+      }
+    }
+  }
+}
