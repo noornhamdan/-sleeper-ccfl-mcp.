@@ -1,14 +1,14 @@
 {
   "name": "sleeper-ccfl",
-  "version": "0.1.0",
-  "description": "Live, read-only Sleeper data for the Crabcakes & Football dynasty league.",
+  "version": "0.2.0",
+  "description": "Live Sleeper CCFL data, saved history and evidence-based lineup analysis.",
   "author": {
     "name": "Nooreldeen Hamdan"
   },
   "interface": {
     "displayName": "Sleeper CCFL",
-    "shortDescription": "Live CCFL rosters, matchups, and transactions.",
-    "longDescription": "Connects ChatGPT and Codex directly to Sleeper's public API for current CCFL league state, rosters, matchups, transactions, traded picks, and available-player searches.",
+    "shortDescription": "Live rosters, history, lineup and roster comparisons.",
+    "longDescription": "Connects to Sleeper's public API, saves timestamped history, calculates exact league scoring, and compares legal lineups and free agents using sourced operator-imported projections. Never changes Sleeper rosters.",
     "developerName": "Nooreldeen Hamdan",
     "category": "Lifestyle",
     "capabilities": ["Read"],

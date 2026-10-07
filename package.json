@@ -1,13 +1,17 @@
 {
   "name": "sleeper-ccfl-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Read-only MCP server for Sleeper CCFL league data",
+  "description": "Sleeper CCFL live data, evidence archive and lineup analysis",
   "scripts": {
     "start": "node src/http.js",
     "start:stdio": "node src/stdio.js",
     "test": "node --test",
+    "test:live": "SLEEPER_LIVE_TESTS=1 node --test",
+    "capture": "node src/cli.js capture",
+    "evidence:import": "node src/cli.js import",
+    "lineup": "node src/cli.js optimize",
     "inspect": "npx @modelcontextprotocol/inspector node src/stdio.js"
   },
   "engines": { "node": ">=20" },

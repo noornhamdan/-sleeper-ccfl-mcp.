@@ -7,12 +7,12 @@ test("uses the CCFL defaults", () => {
   assert.equal(config().teamName, "Tubbo Johnson");
 });
 
-test("Sleeper league endpoint is live", async () => {
+test("Sleeper league endpoint is live", { skip: process.env.SLEEPER_LIVE_TESTS !== '1' }, async () => {
   const league = await sleeperGet(`/league/${config().leagueId}`);
   assert.equal(league.name, "Crabcakes & Football (CCFL)");
 });
 
-test("builds a timestamped live snapshot", async () => {
+test("builds a timestamped live snapshot", { skip: process.env.SLEEPER_LIVE_TESTS !== '1' }, async () => {
   const data = await snapshot();
   assert.equal(data.league.league_id, config().leagueId);
   assert.ok(data.fetched_at);
@@ -24,7 +24,7 @@ test("builds a timestamped live snapshot", async () => {
   }
 });
 
-test("available-player defaults suppress unaffiliated stale records", async () => {
+test("available-player defaults suppress unaffiliated stale records", { skip: process.env.SLEEPER_LIVE_TESTS !== '1' }, async () => {
   const players = await availablePlayers({ position: "RB", limit: 20 });
   assert.ok(players.length > 0);
   assert.ok(players.every((player) => player.team));
