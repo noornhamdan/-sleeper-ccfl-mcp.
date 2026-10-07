@@ -1,3 +1,4 @@
+import { archive } from './archive.js';
 const API_ROOT = "https://api.sleeper.app/v1";
 const DEFAULT_LEAGUE_ID = "1312132677519818752";
 const DEFAULT_TEAM_NAME = "Tubbo Johnson";
@@ -22,8 +23,8 @@ export async function sleeperGet(path) {
   return response.json();
 }
 
-export async function getPlayers() {
-  if (playersCache && Date.now() - playersCachedAt < PLAYER_CACHE_MS) return playersCache;
+export async function getPlayers(force = false) {
+  if (!force && playersCache && Date.now() - playersCachedAt < PLAYER_CACHE_MS) return playersCache;
   playersCache = await sleeperGet("/players/nfl");
   playersCachedAt = Date.now();
   return playersCache;
@@ -36,6 +37,7 @@ export function playerLabel(playerId, players) {
     player_id: playerId,
     name: p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ") || playerId,
     position: p.position || null,
+    fantasy_positions: p.fantasy_positions || [p.position].filter(Boolean),
     team: p.team || null,
     status: p.status || null,
     injury_status: p.injury_status || null,
@@ -55,7 +57,7 @@ export async function snapshot(requestedWeek) {
     sleeperGet(`/league/${leagueId}/rosters`),
     sleeperGet("/state/nfl"),
     sleeperGet(`/league/${leagueId}/traded_picks`),
-    getPlayers(),
+    getPlayers(true),
   ]);
   const week = requestedWeek || currentWeek(state, league);
   const [matchups, transactions] = await Promise.all([
@@ -76,6 +78,7 @@ export async function snapshot(requestedWeek) {
       losses: r.settings?.losses ?? null,
       ties: r.settings?.ties ?? null,
       points_for: r.settings?.fpts == null ? null : r.settings.fpts + (r.settings.fpts_decimal || 0) / 100,
+      waiver_budget_used: r.settings?.waiver_budget_used ?? null,
       players: (r.players || []).map((id) => playerLabel(id, players)),
       starters: (r.starters || []).map((id) => playerLabel(id, players)),
       reserve: (r.reserve || []).map((id) => playerLabel(id, players)),
@@ -84,6 +87,7 @@ export async function snapshot(requestedWeek) {
         points: matchup.points,
         custom_points: matchup.custom_points ?? null,
         starters_points: matchup.starters_points || [],
+        players_points: matchup.players_points || {},
       } : null,
     };
   });
@@ -100,7 +104,7 @@ export async function snapshot(requestedWeek) {
     drops_resolved: Object.entries(tx.drops || {}).map(([playerId, rosterId]) => ({ ...playerLabel(playerId, players), roster_id: rosterId })),
   }));
 
-  return {
+  const data = {
     fetched_at: new Date().toISOString(),
     source: "https://api.sleeper.app/v1",
     league: { league_id: league.league_id, name: league.name, status: league.status, season: league.season, settings: league.settings, scoring_settings: league.scoring_settings, roster_positions: league.roster_positions },
@@ -113,6 +117,13 @@ export async function snapshot(requestedWeek) {
     transactions: normalizedTransactions,
     traded_picks: tradedPicks,
   };
+  try {
+    const saved = await archive.save('snapshots', data);
+    data.history = { saved: true, snapshot_id: saved.id, durable_storage_configured: process.env.CCFL_DATA_PERSISTENT === 'true' };
+  } catch (error) {
+    data.history = { saved: false, error: error.message };
+  }
+  return data;
 }
 
 export async function availablePlayers({ position, query, limit = 50, include_unaffiliated = false }) {

@@ -1,40 +1,31 @@
-# Deployment checklist
+# Activate the v0.2 upgrade
 
-The code is production-ready. Completing the connection requires accounts because ChatGPT needs a stable public HTTPS endpoint.
+## Existing deployment
 
-## 1. Publish the repository
+Deploy the tested v0.2 commit to the existing service. Keep the current free `render.yaml` unchanged unless intentionally purchasing hosting/storage. Its filesystem is ephemeral: archives disappear on restart or redeploy. See [Render persistent disk documentation](https://render.com/docs/disks).
 
-Create a private GitHub repository named `sleeper-ccfl-mcp` and push this directory. The included GitHub Actions workflow runs the live integration tests on each push.
+For long-term history on Render:
 
-## 2. Deploy on Render
+1. Use a paid service instance and attach a persistent disk at `/var/data` (requires a billing decision).
+2. Set `CCFL_DATA_DIR=/var/data/ccfl` and `CCFL_DATA_PERSISTENT=true` only after the disk is mounted.
+3. Deploy, call `ccfl_refresh`, restart the service, then confirm the record remains via `get_ccfl_history`. The flag is operator configuration, not proof that the host actually persists bytes.
+4. Keep a single service instance. The archive supports concurrent sessions in one filesystem; it is not a shared multi-host database.
 
-1. In Render, choose **New → Blueprint**.
-2. Select the `sleeper-ccfl-mcp` repository.
-3. Render detects `render.yaml`; choose **Apply**.
-4. Wait until `/` returns JSON with `"status":"ok"`.
-5. Copy the final URL and append `/mcp`.
+No paid feed or hosting purchase is performed by this code change. For local stdio use, point `CCFL_DATA_DIR` at a stable directory outside the plugin install location so plugin replacement cannot delete history.
 
-No credentials or secret environment variables are needed. For faster and more reliable refreshes, use an always-on Render instance rather than a sleeping free instance.
+## Refresh the connected plugin
 
-## 3. Validate production
+Existing installations may retain the old package/tool list. Update/reload the Sleeper CCFL plugin or rescan the existing `/mcp` endpoint. `health` must report `version: 0.2.0`. `tools/list` must expose 12 tools, including `optimize_lineup` and `get_usage_trends`. If these are absent, the new code is not active in that connection.
 
-Run MCP Inspector and select **Streamable HTTP**:
+## End-to-end checks
 
-```bash
-npx @modelcontextprotocol/inspector
-```
+- Original `ccfl_refresh` still returns a recent `fetched_at`, the configured team and current roster.
+- `history.saved` is true; a write error is visible rather than hiding data loss.
+- `get_usage_trends` returns source-tagged recent completed weeks and explicit missing route fields.
+- `optimize_lineup` fetches baseline evidence or uses fresh imported data, applies live scoring and reports coverage. A baseline is not a final injury-adjusted recommendation.
+- `unavailable_ids` simulates confirmed absences. For reduced workloads, import revised sourced stats rather than changing arbitrary weights.
+- On game day supply sourced exact `kickoffs`; otherwise the tool reports timing gaps. Started starters remain fixed, and started bench players stay out.
+- `evaluate_roster_adds` excludes players currently rostered anywhere, checks horizon coverage, and measures lineup gains for each named drop.
+- Review completed weeks with `review_lineup_decisions`. Pregame records are retained; actual player scores can remain provisional.
 
-Enter `https://YOUR-SERVICE.onrender.com/mcp`, initialize, list tools, call `health`, then call `ccfl_refresh`.
-
-## 4. Connect ChatGPT
-
-In ChatGPT's plugin/developer settings, create a plugin from the public MCP URL and scan its tools. The expected tools are:
-
-1. `ccfl_refresh`
-2. `get_league_rosters`
-3. `get_week_activity`
-4. `find_available_players`
-5. `lookup_players`
-6. `health`
-
-Start a new chat and ask `CCFL refresh`. A valid response must report a recent `fetched_at` timestamp from the tool result.
+Evidence imports run through the operator CLI, not unauthenticated MCP writes. The existing HTTP endpoint remains publicly readable; do not put private credentials or sensitive notes in imported records. Add authentication before expanding to sensitive/private data or write-capable tools.
